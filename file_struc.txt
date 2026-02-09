@@ -1,10 +1,31 @@
-File Structure
+File Structure (.btf)
 
-Example here in Hex:
+Overview
+- Custom 1-bit-per-pixel bitmap format.
+- All multi-byte integers are big-endian (most significant byte first).
+- Pixels are packed 8 per byte, most-significant bit first.
 
-42 52 46 00 01 00 01 80
+Header (7 bytes total)
+- Signature: 3 bytes
+  - 0x42 0x54 0x46 (ASCII "BTF")
+  - If signature is missing or incorrect, the viewer should error.
+- Width: 2 bytes (unsigned)
+- Height: 2 bytes (unsigned)
 
-42 54 46 (a Hex signature convert into "BTF", if its not there, the custom image viewer will result an Error) first 3 bytes
-00 01 (width) 2 bytes
-00 01 (height) also 2 bytes
-80 (1 pixel, convert to string binary 10000000) (width * height) bytes
+Pixel Data
+- Size: width * height bits.
+- Storage: packed into bytes, 8 pixels per byte.
+- Bit order: MSB first (left-most pixel of each 8-pixel group is bit 7).
+- Padding: if width * height is not a multiple of 8, the last byte is padded with 0 bits in the least-significant positions.
+
+Example (Hex)
+42 54 46 00 01 00 01 80
+
+Breakdown
+- 42 54 46  -> "BTF" signature
+- 00 01     -> width = 1
+- 00 01     -> height = 1
+- 80        -> pixel data (1000 0000 = first pixel on, 7 padding bits)
+
+Total File Size
+- 7 + ceil((width * height) / 8) bytes

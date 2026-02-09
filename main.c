@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
 
 void usage(void) {
   printf("Usage: btf [option] [file.btf]\n");
@@ -12,12 +13,28 @@ void usage(void) {
 
 char *get_btf_data(const char *input) {
   FILE *file = fopen(input, "rb");
+  if (file == NULL) {
+    return NULL;
+  }
 
-  unsigned dat_len = strlen(file) - 7; // 7 bytes of ignore metadata, focus on pixel data
-  char *output = malloc((dat_len * 8) + 1); // + 1 for null-terminator, also multiply with 8 because each pixel is 1-bit by design and we going to convert data in the file into string of binary
+  if (fseek(file, 0, SEEK_END) != 0) {
+    fclose(file);
+    return NULL;
+  }
+  long file_size = ftell(file);
+  if (file_size < 7) {
+    fclose(file);
+    return NULL;
+  }
+  if (fseek(file, 0, SEEK_SET) != 0) {
+    fclose(file);
+    return NULL;
+  }
 
-  int i = 0 + 7; // maybe a joke here
-  for (i < strlen(file); i++) {
+  unsigned dat_len = (unsigned)file_size - 7; // 7 bytes of ignore metadata, focus on pixel data
+  unsigned char *output = malloc((dat_len * 8) + 1); // + 1 for null-terminator, also multiply with 8 because each pixel is 1-bit by design and we going to convert data in the file into string of binary
+
+  for (unsigned i = 7; i < (unsigned)file_size; i++) {
     // uhh, how to convert each bit into output char
   }
 
@@ -40,17 +57,17 @@ int main(int argc, char *argv[]) {
   }
 
   if (write_mode) {
-    if (argv[2] == NULL) {
+    if (argc < 3 || argv[2] == NULL) {
       printf("Error: please input the image file\n");
       return 2;
     }
   } else {
-    if (argv[2] == NULL) {
+    if (argc < 3 || argv[2] == NULL) {
       printf("Error: please input the image file\n");
       return 2;
     }
-    image_data = get_btf_data(argv[2]); // when there's no option
-    if (image_data = NULL) {
+    char *image_data = get_btf_data(argv[2]); // when there's no option
+    if (image_data == NULL) {
       printf("Error: null returned....\n");
       return 3;
     }
