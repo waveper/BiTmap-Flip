@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 void usage(void) {
   printf("Usage: btf [option] [file.btf]\n");
@@ -21,10 +22,10 @@ int main(int argc, char *argv[]) {
 
   bool write_mode = false;
 
-  if (argv[1] == "-h" | argv[1] == "--help") {
+  if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
     usage();
     return 0;
-  } else if (argv[1] == "-w" | argv[1] == "--write") {
+  } else if (strcmp(argv[1], "-w") == 0 || strcmp(argv[1], "--write") == 0) {
     write_mode = true;
   }
 
