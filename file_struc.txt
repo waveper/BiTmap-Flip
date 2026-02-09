@@ -2,5 +2,9 @@ File Structure
 
 Example here in Hex:
 
-42 54 46 (a Hex signature convert into "BTF", if its not there, the custom image viewer will result an Error)
+42 52 46 00 01 00 01 80
 
+42 54 46 (a Hex signature convert into "BTF", if its not there, the custom image viewer will result an Error) first 3 bytes
+00 01 (width) 2 bytes
+00 01 (height) also 2 bytes
+80 (1 pixel, convert to string binary 10000000) (width * height) bytes
