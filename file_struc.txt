@@ -1,0 +1,6 @@
+File Structure
+
+Example here in Hex:
+
+42 54 46 (a Hex signature convert into "BTF", if its not there, the custom image viewer will result an Error)
+

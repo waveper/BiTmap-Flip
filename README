@@ -1,0 +1,10 @@
+BTF (BiTmap Flip)
+
+a custom image file (.btf) that porpose is to be lightweight than .bmp file
+(also need a program to view file)
+
+the file has 1-bit color for each pixel, so single bytes can hold 8 pixels!
+
+downside is:
+	it only has 1-bit color, so just use PNG or JPEG for compatiblity and more color
+	and nobody going know what is .btf file
