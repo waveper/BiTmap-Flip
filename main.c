@@ -12,8 +12,20 @@ void usage(void) {
   printf("made by github.com/waveper\n");
 }
 
-char *get_btf_data(const char *input) { // get all data from binary (metadata + pixel data), it will be extractee later
-  // also verify the file
+static uint16_t extract_btf_width(const unsigned char *input) {
+  return (uint16_t)((input[3] << 8) | input[4]);
+}
+
+static uint16_t extract_btf_height(const unsigned char *input) {
+  return (uint16_t)((input[5] << 8) | input[6]);
+}
+
+static size_t btf_pixel_bytes(uint16_t width, uint16_t height) {
+  uint32_t pixels = (uint32_t)width * (uint32_t)height;
+  return (size_t)((pixels + 7) / 8);
+}
+
+unsigned char *get_btf_data(const char *input, size_t *out_size, char output_mode) { // get all data from binary (metadata + pixel data)
   FILE *file = fopen(input, "rb");
   if (file == NULL) {
     return NULL;
@@ -33,52 +45,55 @@ char *get_btf_data(const char *input) { // get all data from binary (metadata + 
     return NULL;
   }
 
-  unsigned dat_len = (unsigned)file_size;
-  unsigned char *output = malloc((dat_len * 8) + 1); // + 1 for null-terminator, also multiply with 8 because each pixel is 1-bit by design and we going to convert data in the file into string of binary
-
-  for (unsigned i = 7; i < (unsigned)file_size; i++) {
-    snprintf(output, 8, "\X20", file[i]); // TODO: actual functioning read file to binary string
+  unsigned char *output = malloc((size_t)file_size);
+  if (output == NULL) {
+    fclose(file);
+    return NULL;
   }
-  
-  // output as strings of binaries
-  return output;
+
+  size_t read_len = fread(output, 1, (size_t)file_size, file);
+  fclose(file);
+  if (read_len != (size_t)file_size) {
+    free(output);
+    return NULL;
+  }
+
+  if (output[0] != 'B' || output[1] != 'T' || output[2] != 'F') {
+    free(output);
+    return NULL;
+  }
+
+  uint16_t width = extract_btf_width(output);
+  uint16_t height = extract_btf_height(output);
+  size_t expected_size = 7 + btf_pixel_bytes(width, height);
+  if ((size_t)file_size != expected_size) {
+    free(output);
+    return NULL;
+  }
+
+  if (out_size != NULL) {
+    *out_size = (size_t)file_size;
+  }
+
+  if (output_mode == "d") { // image data
+    return output;
+  } else if (output_mode == "w") { // width
+    return width;
+  } else if (output_mode == "h") { // height
+    return height;
+  } else { // none
+    return NULL;
+  }
 }
 
-char *extract_btf_pdata(const char *input, int pixels) { // extract pixel data from string of binary and output as extracted pixel data (binary string)
-  unsigned dat_len = sizeof(input) - (7 * 8); // ignore 7 bytes of metadata, focus on pixel data
-  unsigned char *output = malloc(dat_len + 1);
-
-  for (int i = 7 * 8; i < (pixels + (7 * 8)); i++) { // pixels varuable is the numbers of pixels calculated from (width * height)
-    output[i] = input[i];
+unsigned char *extract_btf_pdata(const unsigned char *input, uint16_t width, uint16_t height) {
+  size_t pixel_bytes = btf_pixel_bytes(width, height);
+  unsigned char *output = malloc(pixel_bytes);
+  if (output == NULL) {
+    return NULL;
   }
-  output[i + 1] = '\0';
-  
-  return output;
-}
 
-int extract_btf_width(const char *input) {
-  uint16_t output; // 16-bit output
-  char *bin[(2 * 8) + 1]; // binary buffer
-
-  for (int i = 4 * 8; i < (4 * 8) + (2 * 8); i++) {
-    bin[i / (4 * 8)] = input[i];
-  }
-  bin[17] = '\0';
-  output  = strtoll(bin, NULL, 2);
-
-  return output;
-}
-
-int extract_btf_height(const char *input) {
-  uint16_t output; // 16-bit output
-  char *bin[(2 * 8) + 1]; // binary buffer
-
-  for (int i = 6 * 8; i < (6 * 8) + (2 * 8); i++) {
-    bin[i / (6 * 8)] = input[i];
-  }
-  bin[17] = '\0';
-  output  = strtoll(bin, NULL, 2);
-
+  memcpy(output, input + 7, pixel_bytes);
   return output;
 }
 
@@ -107,11 +122,22 @@ int main(int argc, char *argv[]) {
       printf("Error: please input the image file\n");
       return 2;
     }
-    char *image_data = get_btf_data(argv[2]); // when there's no option
+    size_t image_size = 0;
+    unsigned char *image_data = get_btf_data(argv[2], &image_size, "d"); // when there's no option
     if (image_data == NULL) {
       printf("Error: null returned....\n");
       return 3;
     }
+
+    // view mode
+    int image_width = get_btf_data(argv[2], &image_size, "w"); // get image width
+    int image_height = get_btf_data(argv[2], &image_size, "h")
+    int image_bytes = btf_pixel_bytes(image_width, image_height);
+    for (int i = 0; i < image_bytes; i++) {
+      // later
+    }
+
+    free(image_data);
   }
 
   return 0;
